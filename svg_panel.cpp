@@ -24,8 +24,8 @@ SVGPanel::SVGPanel(wxWindow* parent, int id, const wxString& svg_filename)
 	: wxPanel(parent, id, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE),
 	  m_svg_image(NULL)
 {
-  if ( !svg_filename.IsEmpty() )
-	  m_svg_image = nsvgParseFromFile(svg_filename, "px", 96.0f);
+	if(!svg_filename.IsEmpty())
+		m_svg_image = nsvgParseFromFile(svg_filename.c_str(), "px", 96.0f);
 
 	// Use...
 	for(NSVGshape* shape = m_svg_image->shapes; shape != NULL; shape = shape->next)
@@ -58,7 +58,7 @@ void SVGPanel::LoadSVG(const wxString& filename)
 	if(m_svg_image != NULL)
 		nsvgDelete(m_svg_image);
 
-	m_svg_image = nsvgParseFromFile(filename, "px", 96.0f);
+	m_svg_image = nsvgParseFromFile(filename.c_str(), "px", 96.0f);
 	m_bitmap = wxNullBitmap;
 	Refresh();
 };
