@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="minimal" />
+		<Option execution_dir="./" />
+		<Option pch_mode="2" />
+		<Option default_target="win_gcc" />
+		<Option compiler="null" />
+		<Build>
+			<Target title="win_gcc">
+				<Option output="bin/$(TARGET_NAME)/$(PROJECT_NAME)" prefix_auto="1" extension_auto="1" />
+				<Option object_output=".objs/$(TARGET_NAME)" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="`$(#WX_CONFIG) --cflags`" />
+				</Compiler>
+				<Linker>
+					<Add option="`$(#WX_CONFIG) --libs base,core`" />
+				</Linker>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="All" targets="win_gcc;" />
+		</VirtualTargets>
+		<Unit filename="minimal.cpp" />
+		<Unit filename="nanosvg.h" />
+		<Unit filename="nanosvgrast.h" />
+		<Unit filename="svg_panel.cpp" />
+		<Unit filename="svg_panel.h" />
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>
