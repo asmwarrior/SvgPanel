@@ -15,4 +15,4 @@ Here is the screen shot of a svg file `drawing.svg` shown in the panel compared 
 
 # How to use the code
 
-Just copy/drag the 4 source files to your files, and construct a `SVGPanel` window where you needed.
+Just copy/drag the 4 source files(`nanosvg.h`, `nanosvgrast.h`, `svg_panel.h` and `svg_panel.cpp`) to your project file, and construct a `SVGPanel` window where you needed.
