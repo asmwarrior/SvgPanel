@@ -129,7 +129,7 @@ void SVGPanel::OnPaint(wxPaintEvent& event)
 			free(image_buffer);
 			// draw text on top
 			wxGraphicsContext* gc = wxGraphicsContext::Create(m_bitmap);
-			//gc->SetAntialiasMode( wxANTIALIAS_NONE );
+			gc->SetAntialiasMode(wxANTIALIAS_NONE);
 			for(TextLabel& a : m_TextLabels)
 			{
 				// The coordinates refer to the top-left corner of the rectangle bounding the string.
