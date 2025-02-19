@@ -1034,7 +1034,7 @@ static void nsvg__addShape(NSVGparser* p)
 	shape->fillRule = attr->fillRule;
 	shape->opacity = attr->opacity;
 
-	// Text
+	// for Text elements, we have to copy properties from Parser to Shape instance
 	shape->isText = p->isText;
 	p->isText = 0; // reset the parser's isText field once it get copied to shape
 	shape->fontSize = attr->fontSize;
@@ -1060,20 +1060,24 @@ static void nsvg__addShape(NSVGparser* p)
 	}
 	else if(shape->isText == 1)
 	{
-		float values[2];
-		float inv[6], localBounds[4];
-		nsvg__xformInverse(inv, attr->xform);
+		float values[2];						// Array to store transformed coordinates
+		float inv[6], localBounds[4];			// Arrays for inverse transformation and local bounds
+		nsvg__xformInverse(inv, attr->xform);	// Inverse of the transformation matrix (xform)
 
-		//End
+		// Compute transformed coordinates from the inverse transformation
 		values[0] = (inv[2] + inv[4]);
 		values[1] = (inv[3] + inv[5]);
 
+		// Get the local bounds of the shape
 		nsvg__getLocalBounds(localBounds, shape, attr->xform);
 
-		shape->bounds[0] = attr->xform[4];
-		shape->bounds[1] = attr->xform[5];
-		shape->bounds[2] = attr->xform[4];
-		shape->bounds[3] = attr->xform[5];
+		// Set the shape's bounding box coordinates
+		shape->bounds[0] = attr->xform[4];	// The x position of the shape (translation in matrix)
+		shape->bounds[1] = attr->xform[5];	// The y position of the shape (translation in matrix)
+		shape->bounds[2] = attr->xform[4];	// Set the right boundary (same as left boundary for now)
+		shape->bounds[3] = attr->xform[5];	// Set the bottom boundary (same as top boundary for now)
+
+		// for text field, the bounds[0] is the x coordinates, the bounds[1] is the y coordinates
 	}
 
 	// Set fill
