@@ -127,8 +127,6 @@ typedef struct NSVGpaint {
 	};
 } NSVGpaint;
 
-#define kMaxTextLength 256
-
 typedef struct NSVGpath
 {
 	float* pts;					// Cubic bezier points: x0,y0, [cpx1,cpx1,cpx2,cpy2,x1,y1], ...
@@ -159,11 +157,17 @@ typedef struct NSVGshape
 	float xform[6];				// Root transformation for fill/stroke gradient
 	NSVGpath* paths;			// Linked list of paths in the image.
 	struct NSVGshape* next;		// Pointer to next shape, or NULL if last element.
-	char fontFamily[64];
-	char fontWeight[64];
-	float fontSize;
-	char isText;
-	char textData[kMaxTextLength];
+
+    // Member variables to store font attributes of the SVG text element, demo text section like below:
+    // <text x="50" y="50" font-family="Arial" font-weight="normal" font-size="16" fill="black">
+    // Normal Text in Arial
+    // </text>
+    char fontFamily[64];        // Font family, such as "Arial", "Verdana", etc.
+    char fontWeight[64];        // Font weight, such as "normal", "bold", etc.
+    float fontSize;             // Font size in pixels (e.g., 12.5 for 12.5px)
+    char isText;                // A flag to indicate if the object is text ('1' for true, '0' for false)
+    char textData[256];         // The actual text content (e.g., "Hello World")
+
 } NSVGshape;
 
 typedef struct NSVGimage
@@ -448,11 +452,34 @@ typedef struct NSVGattrib
 	char visible;
 } NSVGattrib;
 
+// A simple example where we use the class attribute to apply styles to different SVG elements
+// the "class" attribute in an SVG file is used to assign one or more CSS classes to an SVG element,
+// just like in HTML. This allows you to apply predefined styles from an external or internal stylesheet,
+// rather than writing the styles directly into the style attribute of the element.
+// The "class" attribute makes it easier to reuse styles and manage the appearance of multiple elements at once.
+// demo svg file is shown like below:
+// <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+//   <style>
+//     .circle-style {
+//       fill: red;
+//       stroke: black;
+//       stroke-width: 2;
+//     }
+//     .rect-style {
+//       fill: blue;
+//       stroke: green;
+//       stroke-width: 3;
+//     }
+//   </style>
+//
+//   <circle cx="50" cy="50" r="40" class="circle-style"/>
+//   <rect x="100" y="20" width="80" height="80" class="rect-style"/>
+// </svg>
 typedef struct NSVGstyles
 {
-    char* name;
-    char* description;
-    struct NSVGstyles* next;
+    char* name;                 // the name such as "circle-style"
+    char* description;          // the whole definition of the style, such as "{ fill: red; stroke: black; stroke-width: 2; }
+    struct NSVGstyles* next;    // the next style definition in the style definition list
 } NSVGstyles;
 
 typedef struct NSVGparser
@@ -473,7 +500,7 @@ typedef struct NSVGparser
 	char pathFlag;
 	char defsFlag;
 	char isText;
-	char styleFlag;
+	char styleFlag; // we are parsing the <style> section
 } NSVGparser;
 
 static void nsvg__xformIdentity(float* t)
@@ -672,6 +699,7 @@ error:
 	return NULL;
 }
 
+// totally remove the style chain
 static void nsvg__deleteStyles(NSVGstyles* style) {
     while (style) {
         NSVGstyles *next = style->next;
@@ -2962,7 +2990,7 @@ static void nsvg__content(void* ud, const char* s)
 {
 	NSVGparser* p = (NSVGparser*)ud;
     if (p->styleFlag) {
-
+        // copy the whole style description string inside the { and } to the description field
         int state = 0;
         const char* start;
         while (*s) {
