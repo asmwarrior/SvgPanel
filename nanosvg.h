@@ -158,15 +158,15 @@ typedef struct NSVGshape
 	NSVGpath* paths;			// Linked list of paths in the image.
 	struct NSVGshape* next;		// Pointer to next shape, or NULL if last element.
 
-    // Member variables to store font attributes of the SVG text element, demo text section like below:
-    // <text x="50" y="50" font-family="Arial" font-weight="normal" font-size="16" fill="black">
-    // Normal Text in Arial
-    // </text>
-    char fontFamily[64];        // Font family, such as "Arial", "Verdana", etc.
-    char fontWeight[64];        // Font weight, such as "normal", "bold", etc.
-    float fontSize;             // Font size in pixels (e.g., 12.5 for 12.5px)
-    char isText;                // A flag to indicate if the object is text ('1' for true, '0' for false)
-    char textData[256];         // The actual text content (e.g., "Hello World")
+	// Member variables to store font attributes of the SVG text element, demo text section like below:
+	// <text x="50" y="50" font-family="Arial" font-weight="normal" font-size="16" fill="black">
+	// Normal Text in Arial
+	// </text>
+	char fontFamily[64];		// Font family, such as "Arial", "Verdana", etc.
+	char fontWeight[64];		// Font weight, such as "normal", "bold", etc.
+	float fontSize;				// Font size in pixels (e.g., 12.5 for 12.5px)
+	char isText;				// A flag to indicate if the object is text ('1' for true, '0' for false)
+	char textData[256];			// The actual text content (e.g., "Hello World")
 
 } NSVGshape;
 
@@ -477,9 +477,9 @@ typedef struct NSVGattrib
 // </svg>
 typedef struct NSVGstyles
 {
-    char* name;                 // the name such as "circle-style"
-    char* description;          // the whole definition of the style, such as "{ fill: red; stroke: black; stroke-width: 2; }
-    struct NSVGstyles* next;    // the next style definition in the style definition list
+	char* name;					// the name such as "circle-style"
+	char* description;			// the whole definition of the style, such as "{ fill: red; stroke: black; stroke-width: 2; }
+	struct NSVGstyles* next;	// the next style definition in the style definition list
 } NSVGstyles;
 
 typedef struct NSVGparser
@@ -701,15 +701,15 @@ error:
 
 // totally remove the style chain
 static void nsvg__deleteStyles(NSVGstyles* style) {
-    while (style) {
-        NSVGstyles *next = style->next;
-        if (style->name!= NULL)
-            free(style->name);
-        if (style->description != NULL)
-            free(style->description);
-        free(style);
-        style = next;
-    }
+	while (style) {
+		NSVGstyles *next = style->next;
+		if (style->name!= NULL)
+			free(style->name);
+		if (style->description != NULL)
+			free(style->description);
+		free(style);
+		style = next;
+	}
 }
 
 static void nsvg__deletePaths(NSVGpath* path)
@@ -1941,18 +1941,18 @@ static int nsvg__parseAttr(NSVGparser* p, const char* name, const char* value)
 	} else if (strcmp(name, "id") == 0) {
 		strncpy(attr->id, value, 63);
 		attr->id[63] = '\0';
-    } else if (strcmp(name, "class") == 0) {
-        NSVGstyles* style = p->styles;
-        while (style) {
-            if (strcmp(style->name + 1, value) == 0) {
-                break;
-            }
-            style = style->next;
-        }
-        if (style) {
-            nsvg__parseStyle(p, style->description);
-        }
-    } else if (strcmp(name, "x") == 0) {
+	} else if (strcmp(name, "class") == 0) {
+		NSVGstyles* style = p->styles;
+		while (style) {
+			if (strcmp(style->name + 1, value) == 0) {
+				break;
+			}
+			style = style->next;
+		}
+		if (style) {
+			nsvg__parseStyle(p, style->description);
+		}
+	} else if (strcmp(name, "x") == 0) {
 		nsvg__xformSetTranslation(xform, (float)nsvg__atof(value), 0);
 		nsvg__xformPremultiply(attr->xform, xform);
 	} else if (strcmp(name, "y") == 0) {
@@ -2954,9 +2954,9 @@ static void nsvg__startElement(void* ud, const char* el, const char** attr)
 		p->defsFlag = 1;
 	} else if (strcmp(el, "svg") == 0) {
 		nsvg__parseSVG(p, attr);
-    } else if (strcmp(el, "style") == 0) {
-        p->styleFlag = 1;
-    }
+	} else if (strcmp(el, "style") == 0) {
+		p->styleFlag = 1;
+	}
 }
 
 static void nsvg__endElement(void* ud, const char* el)
@@ -2969,72 +2969,69 @@ static void nsvg__endElement(void* ud, const char* el)
 		p->pathFlag = 0;
 	} else if (strcmp(el, "defs") == 0) {
 		p->defsFlag = 0;
-    } else if (strcmp(el, "style") == 0) {
-        p->styleFlag = 0;
-    }
+	} else if (strcmp(el, "style") == 0) {
+		p->styleFlag = 0;
+	}
 }
 
 static char *nsvg__strndup(const char *s, size_t n)
 {
-    char *result;
-    size_t len = strlen(s);
+	char *result;
+	size_t len = strlen(s);
 
-    if (n < len)
-        len = n;
+	if (n < len)
+		len = n;
 
-    result = (char *)malloc(len + 1);
-    if (!result)
-        return 0;
+	result = (char *)malloc(len + 1);
+	if (!result)
+		return 0;
 
-    result[len] = '\0';
-    return (char *)memcpy(result, s, len);
+	result[len] = '\0';
+	return (char *)memcpy(result, s, len);
 }
 
 static void nsvg__content(void* ud, const char* s)
 {
 	NSVGparser* p = (NSVGparser*)ud;
-    if (p->styleFlag) {
-        // copy the whole style description string inside the { and } to the description field
-        int state = 0;
-        const char* start;
-        while (*s) {
-            char c = *s;
-            if (nsvg__isspace(c) || c == '{') {
-                if (state == 1) {
-                    NSVGstyles* next = p->styles;
+	if (p->styleFlag) {
+		// copy the whole style description string inside the { and } to the description field
+		int state = 0;
+		const char* start;
+		while (*s) {
+			char c = *s;
+			if (nsvg__isspace(c) || c == '{') {
+				if (state == 1) {
+					NSVGstyles* next = p->styles;
 
-                    p->styles = (NSVGstyles*)malloc(sizeof(NSVGstyles));
-                    p->styles->next = next;
-                    p->styles->name = nsvg__strndup(start, (size_t)(s - start));
-                    start = s + 1;
-                    state = 2;
-                }
-            } else if (state == 2 && c == '}') {
-                p->styles->description = nsvg__strndup(start, (size_t)(s - start));
-                state = 0;
-            }
-            else if (state == 0) {
-                start = s;
-                state = 1;
-            }
-            s++;
-        }
-    }
-    else
-    {
-        NSVGshape * lastShape = NULL;
-        for (NSVGshape * shape = p->image->shapes; shape != NULL; shape = shape->next) {
+					p->styles = (NSVGstyles*)malloc(sizeof(NSVGstyles));
+					p->styles->next = next;
+					p->styles->name = nsvg__strndup(start, (size_t)(s - start));
+					start = s + 1;
+					state = 2;
+				}
+			} else if (state == 2 && c == '}') {
+				p->styles->description = nsvg__strndup(start, (size_t)(s - start));
+				state = 0;
+			}
+			else if (state == 0) {
+				start = s;
+				state = 1;
+			}
+			s++;
+		}
+	}
+	else {
+		NSVGshape * lastShape = NULL;
+		for (NSVGshape * shape = p->image->shapes; shape != NULL; shape = shape->next) {
+			lastShape = shape;
+		}
 
-            lastShape = shape;
-        }
+		size_t length = strlen(s);
 
-        size_t length = strlen(s);
-
-        if (length > 0 && p && lastShape && !strcmp(lastShape->textData, "") )
-        {
-            memcpy(lastShape->textData, s, length * sizeof(char) );
-        }
-    }
+		if (length > 0 && p && lastShape && !strcmp(lastShape->textData, "") ) {
+			memcpy(lastShape->textData, s, length * sizeof(char) );
+		}
+	}
 //	NSVG_NOTUSED(ud);
 //	NSVG_NOTUSED(s);
 	// empty
