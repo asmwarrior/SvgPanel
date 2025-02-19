@@ -2913,6 +2913,10 @@ static void nsvg__startElement(void* ud, const char* el, const char** attr)
 	} else if (strcmp(el, "text") == 0) {
 		nsvg__pushAttr(p);
 		nsvg__parseText(p, attr);
+		// nsvg__popAttr(p);
+	} else if (strcmp(el, "tspan") == 0) {
+		nsvg__pushAttr(p);
+		nsvg__parseText(p, attr);
 		nsvg__popAttr(p);
 	} else if (strcmp(el, "path") == 0) {
 		if (p->pathFlag)	// Do not allow nested paths.
@@ -2964,6 +2968,8 @@ static void nsvg__endElement(void* ud, const char* el)
 	NSVGparser* p = (NSVGparser*)ud;
 
 	if (strcmp(el, "g") == 0) {
+		nsvg__popAttr(p);
+	} if (strcmp(el, "text") == 0) {
 		nsvg__popAttr(p);
 	} else if (strcmp(el, "path") == 0) {
 		p->pathFlag = 0;
