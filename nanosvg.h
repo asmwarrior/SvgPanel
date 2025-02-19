@@ -138,14 +138,6 @@ typedef struct NSVGpath
 	struct NSVGpath* next;		// Pointer to next path, or NULL if last element.
 } NSVGpath;
 
-typedef struct NSVGgroup
-{
-	char id[64];
-	void* userData;
-	NSVGgroup* parent;			// Pointer to parent group or NULL
-	NSVGgroup* next;			// Pointer to next group or NULL
-} NSVGgroup;
-
 typedef struct NSVGshape
 {
 	char id[64];				// Optional 'id' attr of the shape or its group
@@ -166,7 +158,6 @@ typedef struct NSVGshape
 	char strokeGradient[64];	// Optional 'id' of stroke gradient
 	float xform[6];				// Root transformation for fill/stroke gradient
 	NSVGpath* paths;			// Linked list of paths in the image.
-	NSVGgroup* group;			// Pointer to parent group or NULL
 	struct NSVGshape* next;		// Pointer to next shape, or NULL if last element.
 	char fontFamily[64];
 	char fontWeight[64];
@@ -180,7 +171,6 @@ typedef struct NSVGimage
 	float width;				// Width of the image.
 	float height;				// Height of the image.
 	NSVGshape* shapes;			// Linked list of shapes in the image.
-	NSVGgroup* groups;			// Linked list of all groups in the image
 } NSVGimage;
 
 // Parses SVG file from a file, returns SVG image as paths.
@@ -456,7 +446,6 @@ typedef struct NSVGattrib
 	char hasFill;
 	char hasStroke;
 	char visible;
-	NSVGgroup* group;
 } NSVGattrib;
 
 typedef struct NSVGstyles
@@ -795,7 +784,6 @@ static void nsvg__pushAttr(NSVGparser* p)
 	if (p->attrHead < NSVG_MAX_ATTR-1) {
 		p->attrHead++;
 		memcpy(&p->attr[p->attrHead], &p->attr[p->attrHead-1], sizeof(NSVGattrib));
-		memset(&p->attr[p->attrHead].id, 0, sizeof(p->attr[p->attrHead].id)); // ollydbg fix
 	}
 }
 
@@ -865,7 +853,6 @@ static NSVGgradientData* nsvg__findGradientData(NSVGparser* p, const char* id)
 
 static NSVGgradient* nsvg__createGradient(NSVGparser* p, const char* id, const float* localBounds, float *xform, signed char* paintType)
 {
-	// NSVGattrib* attr = nsvg__getAttr(p); // ollydbg fix
 	NSVGgradientData* data = NULL;
 	NSVGgradientData* ref = NULL;
 	NSVGgradientStop* stops = NULL;
@@ -1007,7 +994,6 @@ static void nsvg__addShape(NSVGparser* p)
 	memcpy(shape->fillGradient, attr->fillGradient, sizeof shape->fillGradient);
 	memcpy(shape->strokeGradient, attr->strokeGradient, sizeof shape->strokeGradient);
 	memcpy(shape->xform, attr->xform, sizeof shape->xform);
-	shape->group = attr->group; // ollydbg fix
 	scale = nsvg__getAverageScale(attr->xform);
 	shape->strokeWidth = attr->strokeWidth * scale;
 	shape->strokeDashOffset = attr->strokeDashOffset * scale;
@@ -2873,29 +2859,6 @@ static void nsvg__parseGradientStop(NSVGparser* p, const char** attr)
 	stop->offset = curAttr->stopOffset;
 }
 
-static void nsvg__parseGroup(NSVGparser* p, const char** attrs)
-{
-	NSVGgroup* group, *g;
-	NSVGattrib* attr = nsvg__getAttr(p);
-
-	nsvg__parseAttribs(p, attrs);
-//	if (!*attr->id) //skip anonymous groups
-//		return;
-
-	group = (NSVGgroup*)malloc( sizeof(NSVGgroup) );
-	memset(group, 0, sizeof(NSVGgroup) );
-	memcpy(group->id, attr->id, sizeof(group->id));
-	group->parent = attr->group;
-	attr->group = group;
-
-	if (!p->image->groups)
-		p->image->groups = group;
-	else {
-		for (g = p->image->groups; g->next; g = g->next);
-		g->next = group;
-	}
-}
-
 static void nsvg__startElement(void* ud, const char* el, const char** attr)
 {
 	NSVGparser* p = (NSVGparser*)ud;
@@ -2914,7 +2877,6 @@ static void nsvg__startElement(void* ud, const char* el, const char** attr)
 
 	if (strcmp(el, "g") == 0) {
 		nsvg__pushAttr(p);
-		nsvg__parseGroup(p, attr);
 		nsvg__parseAttribs(p, attr);
 	} else if (strcmp(el, "text") == 0) {
 		nsvg__pushAttr(p);
@@ -3299,7 +3261,6 @@ error:
 void nsvgDelete(NSVGimage* image)
 {
 	NSVGshape *snext, *shape;
-	NSVGgroup *group, *gnext;
 	if (image == NULL) return;
 	shape = image->shapes;
 	while (shape != NULL) {
@@ -3309,12 +3270,6 @@ void nsvgDelete(NSVGimage* image)
 		nsvg__deletePaint(&shape->stroke);
 		free(shape);
 		shape = snext;
-	}
-	group = image->groups;
-	while (group != NULL) {
-		gnext = group->next;
-		free(group);
-		group = gnext;
 	}
 	free(image);
 }
