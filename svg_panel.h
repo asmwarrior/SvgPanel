@@ -6,6 +6,7 @@
 // for showing the text label on the SVGPanel
 struct TextLabel
 {
+	wxString id;        /// id string
 	wxString label;     /// the text content of the label
 	float x;            /// x coordinates of label
 	float y;            /// y coordinates of label

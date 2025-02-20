@@ -34,6 +34,7 @@ SVGPanel::SVGPanel(wxWindow* parent, int id, const wxString& svg_filename)
 		{
 			// printf("text size = %f, family = %s, content = %s, x = %f, y = %f\n", shape->fontSize, shape->fontFamily, shape->textData, shape->bounds[0], shape->bounds[1]);
 			TextLabel a;
+			a.id = wxString(shape->id);
 			a.label = wxString(shape->textData);
 			a.x = shape->bounds[0];
 			a.y = shape->bounds[1];
