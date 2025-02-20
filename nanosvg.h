@@ -1954,10 +1954,12 @@ static int nsvg__parseAttr(NSVGparser* p, const char* name, const char* value)
 		}
 	} else if (strcmp(name, "x") == 0) {
 		nsvg__xformSetTranslation(xform, (float)nsvg__atof(value), 0);
-		nsvg__xformPremultiply(attr->xform, xform);
+		if (p->isText == 0) // when parsing Tspan, no need to pre multiply the attr->xform
+			nsvg__xformPremultiply(attr->xform, xform);
 	} else if (strcmp(name, "y") == 0) {
 		nsvg__xformSetTranslation(xform, 0, (float)nsvg__atof(value));
-		nsvg__xformPremultiply(attr->xform, xform);
+		if (p->isText == 0) // when parsing Tspan, no need to pre multiply the attr->xform
+			nsvg__xformPremultiply(attr->xform, xform);
 	} else {
 		return 0;
 	}
@@ -2593,7 +2595,35 @@ static void nsvg__parseText(NSVGparser* p, const char** attr)
 
 		}
 	}
-	p->isText = 1;
+	p->isText = 1; // isText is set after we calling the nsvg__parseAttr() function, nsvg__parseAttr() will behave differently whether isText is set or not.
+
+	nsvg__addShape(p);
+}
+
+static void nsvg__parseTspan(NSVGparser* p, const char** attr)
+{
+	float x = 0.0f;
+	float y = 0.0f;
+	float r = 0.0f;
+	float xform[6];
+
+	int i;
+	p->isText = 1; // isText is set after we calling the nsvg__parseAttr() function, nsvg__parseAttr() will behave differently whether isText is set or not.
+
+	for (i = 0; attr[i]; i += 2) {
+		if (!nsvg__parseAttr(p, attr[i], attr[i + 1])) {
+			if (strcmp(attr[i], "x") == 0) x = nsvg__parseCoordinate(p, attr[i+1], nsvg__actualOrigX(p), nsvg__actualWidth(p));
+			if (strcmp(attr[i], "y") == 0) y = nsvg__parseCoordinate(p, attr[i+1], nsvg__actualOrigY(p), nsvg__actualHeight(p));
+			if (strcmp(attr[i], "transform") == 0)
+			{
+				nsvg__parseTransform(xform, attr[i+1]);
+				x = nsvg__parseCoordinate(p, attr[i+1], xform[4], 0);
+				y = nsvg__parseCoordinate(p, attr[i+1], xform[5], 0);
+			}
+			if (strcmp(attr[i], "font-size") == 0)  r = fabsf(nsvg__parseCoordinate(p, attr[i+1], 0.0f, nsvg__actualLength(p)) );
+		}
+	}
+
 
 	nsvg__addShape(p);
 }
@@ -2916,7 +2946,7 @@ static void nsvg__startElement(void* ud, const char* el, const char** attr)
 		// nsvg__popAttr(p);
 	} else if (strcmp(el, "tspan") == 0) {
 		nsvg__pushAttr(p);
-		nsvg__parseText(p, attr);
+		nsvg__parseTspan(p, attr);
 		nsvg__popAttr(p);
 	} else if (strcmp(el, "path") == 0) {
 		if (p->pathFlag)	// Do not allow nested paths.
