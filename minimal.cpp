@@ -179,7 +179,7 @@ MyFrame::MyFrame(const wxString& title)
 #endif // wxUSE_STATUSBAR
 
     // added by asmwarrior for testing the svg_panel
-    SVGPanel* pSvgPanel = new SVGPanel(this, -1, "drawing.svg");
+    SVGPanel* pSvgPanel = new SVGPanel(this, -1, "text1.svg");
 }
 
 
