@@ -2,6 +2,7 @@
 #include "wx/dcbuffer.h"
 #include "wx/dcgraph.h"
 #include <wx/rawbmp.h>
+#include <wx/colour.h>
 
 #define NANOSVG_ALL_COLOR_KEYWORDS  // Include full list of color keywords.
 
@@ -19,6 +20,16 @@ BEGIN_EVENT_TABLE(SVGPanel, wxPanel)
 	EVT_PAINT(SVGPanel::OnPaint)
 END_EVENT_TABLE()
 
+// Function to convert NanoSVG color to wxColor
+wxColor ConvertNSVGColorToWxColor(unsigned int nsvgColor)
+{
+	unsigned char a = (nsvgColor >> 24) & 0xFF;  // Extract alpha
+	unsigned char r = (nsvgColor >> 16) & 0xFF;  // Extract red
+	unsigned char g = (nsvgColor >> 8) & 0xFF;   // Extract green
+	unsigned char b = nsvgColor & 0xFF;          // Extract blue
+
+	return wxColor(r, g, b, a);  // Create wxColor with RGBA
+}
 
 SVGPanel::SVGPanel(wxWindow* parent, int id, const wxString& svg_filename)
 	: wxPanel(parent, id, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE),
@@ -40,6 +51,10 @@ SVGPanel::SVGPanel(wxWindow* parent, int id, const wxString& svg_filename)
 			a.y = shape->bounds[1];
 			a.fontSize = shape->fontSize;
 			a.family = wxString(shape->fontFamily);
+			if (shape->fill.type == NSVG_PAINT_COLOR)
+			{
+				a.fillColor = ConvertNSVGColorToWxColor(shape->fill.color);
+			}
 			m_TextLabels.push_back(a);
 		}
 	}
@@ -167,7 +182,7 @@ void SVGPanel::OnPaint(wxPaintEvent& event)
 					start = pos + 1;
 				}
 
-				wxGraphicsFont gfont = gc->CreateFont(font, *wxRED);
+				wxGraphicsFont gfont = gc->CreateFont(font, a.fillColor);
 				gc->SetFont(gfont);
 
 				// size calculation

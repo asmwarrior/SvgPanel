@@ -12,6 +12,12 @@ struct TextLabel
 	float y;            /// y coordinates of label
 	wxString family;    /// font name string, e.g. Arial, Courier New
 	float fontSize;     /// font size
+	wxColor fillColor; /// the filled color
+
+	// Constructor with default fillColor set to red
+	TextLabel()
+		: fillColor(*wxRED)  // Default color is red
+	{}
 };
 
 struct NSVGimage;
