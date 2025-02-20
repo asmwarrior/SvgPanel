@@ -807,6 +807,12 @@ static NSVGattrib* nsvg__getAttr(NSVGparser* p)
 	return &p->attr[p->attrHead];
 }
 
+// get the previous attribute
+static NSVGattrib* nsvg__getPrevAttr(NSVGparser* p)
+{
+	return &p->attr[p->attrHead-1];
+}
+
 static void nsvg__pushAttr(NSVGparser* p)
 {
 	if (p->attrHead < NSVG_MAX_ATTR-1) {
@@ -1954,12 +1960,22 @@ static int nsvg__parseAttr(NSVGparser* p, const char* name, const char* value)
 		}
 	} else if (strcmp(name, "x") == 0) {
 		nsvg__xformSetTranslation(xform, (float)nsvg__atof(value), 0);
-		if (p->isText == 0) // when parsing Tspan, no need to pre multiply the attr->xform
+		if (p->isText == 0)
 			nsvg__xformPremultiply(attr->xform, xform);
+		else {	// when parsing Tspan, we need to replace the attr->xform, which is the text section's xform, and later pre multiply with the previous attr's xform
+			memcpy(attr->xform, xform, sizeof xform);
+			NSVGattrib* preAttr = nsvg__getAttr(p);
+			if (preAttr) nsvg__xformPremultiply(attr->xform, preAttr->xform);
+		}
 	} else if (strcmp(name, "y") == 0) {
 		nsvg__xformSetTranslation(xform, 0, (float)nsvg__atof(value));
-		if (p->isText == 0) // when parsing Tspan, no need to pre multiply the attr->xform
+		if (p->isText == 0)
 			nsvg__xformPremultiply(attr->xform, xform);
+		else {	// when parsing Tspan, we need to replace the attr->xform, which is the text section's xform, and later pre multiply with the previous attr's xform
+			memcpy(attr->xform, xform, sizeof xform);
+			NSVGattrib* preAttr = nsvg__getAttr(p);
+			if (preAttr) nsvg__xformPremultiply(attr->xform, preAttr->xform);
+		}
 	} else {
 		return 0;
 	}
