@@ -55,6 +55,8 @@ SVGPanel::SVGPanel(wxWindow* parent, int id, const wxString& svg_filename)
 			{
 				a.fillColor = ConvertNSVGColorToWxColor(shape->fill.color);
 			}
+			if (a.label.IsEmpty())
+				continue;
 			m_TextLabels.push_back(a);
 		}
 	}
@@ -148,6 +150,8 @@ void SVGPanel::OnPaint(wxPaintEvent& event)
 			gc->SetAntialiasMode(wxANTIALIAS_NONE);
 			for(TextLabel& a : m_TextLabels)
 			{
+				if (a.label.IsEmpty())
+					continue;
 				// The coordinates refer to the top-left corner of the rectangle bounding the string.
 				// See GetTextExtent() for how to get the dimensions of a text string,
 				// which can be used to position the text more precisely
