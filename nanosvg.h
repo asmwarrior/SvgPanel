@@ -808,9 +808,12 @@ static NSVGattrib* nsvg__getAttr(NSVGparser* p)
 }
 
 // get the previous attribute
-static NSVGattrib* nsvg__getPrevAttr(NSVGparser* p)
+static NSVGattrib* nsvg__getPrev2Attr(NSVGparser* p)
 {
-	return &p->attr[p->attrHead-1];
+	if (p->attrHead-2 >= 0)
+		return &p->attr[p->attrHead-2];
+	else
+		return NULL;
 }
 
 static void nsvg__pushAttr(NSVGparser* p)
@@ -1960,22 +1963,10 @@ static int nsvg__parseAttr(NSVGparser* p, const char* name, const char* value)
 		}
 	} else if (strcmp(name, "x") == 0) {
 		nsvg__xformSetTranslation(xform, (float)nsvg__atof(value), 0);
-		if (p->isText == 0)
-			nsvg__xformPremultiply(attr->xform, xform);
-		else {	// when parsing Tspan, we need to replace the attr->xform, which is the text section's xform, and later pre multiply with the previous attr's xform
-			memcpy(attr->xform, xform, sizeof xform);
-			NSVGattrib* preAttr = nsvg__getAttr(p);
-			if (preAttr) nsvg__xformPremultiply(attr->xform, preAttr->xform);
-		}
+		nsvg__xformPremultiply(attr->xform, xform);
 	} else if (strcmp(name, "y") == 0) {
 		nsvg__xformSetTranslation(xform, 0, (float)nsvg__atof(value));
-		if (p->isText == 0)
-			nsvg__xformPremultiply(attr->xform, xform);
-		else {	// when parsing Tspan, we need to replace the attr->xform, which is the text section's xform, and later pre multiply with the previous attr's xform
-			memcpy(attr->xform, xform, sizeof xform);
-			NSVGattrib* preAttr = nsvg__getAttr(p);
-			if (preAttr) nsvg__xformPremultiply(attr->xform, preAttr->xform);
-		}
+		nsvg__xformPremultiply(attr->xform, xform);
 	} else {
 		return 0;
 	}
@@ -2611,7 +2602,7 @@ static void nsvg__parseText(NSVGparser* p, const char** attr)
 
 		}
 	}
-	p->isText = 1; // isText is set after we calling the nsvg__parseAttr() function, nsvg__parseAttr() will behave differently whether isText is set or not.
+	p->isText = 1;
 
 	nsvg__addShape(p);
 }
@@ -2624,7 +2615,13 @@ static void nsvg__parseTspan(NSVGparser* p, const char** attr)
 	float xform[6];
 
 	int i;
-	p->isText = 1; // isText is set after we calling the nsvg__parseAttr() function, nsvg__parseAttr() will behave differently whether isText is set or not.
+
+	// when parsing Tspan, we need to replace the attr->xform(Tspan's section), which is a copy of text section's xform(Previous 1 attr's xform with xform)
+	// with the old Previous 2 attr's xform, the Previous 2's xform is the parent xform of the text section's xform
+	NSVGattrib* prev2Attr = nsvg__getPrev2Attr(p);
+	NSVGattrib* currAttr = nsvg__getAttr(p);
+	if (prev2Attr)
+		memcpy(currAttr->xform, prev2Attr->xform, sizeof xform);
 
 	for (i = 0; attr[i]; i += 2) {
 		if (!nsvg__parseAttr(p, attr[i], attr[i + 1])) {
@@ -2639,7 +2636,7 @@ static void nsvg__parseTspan(NSVGparser* p, const char** attr)
 			if (strcmp(attr[i], "font-size") == 0)  r = fabsf(nsvg__parseCoordinate(p, attr[i+1], 0.0f, nsvg__actualLength(p)) );
 		}
 	}
-
+	p->isText = 1;
 
 	nsvg__addShape(p);
 }
