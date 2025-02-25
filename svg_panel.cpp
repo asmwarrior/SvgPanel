@@ -145,58 +145,87 @@ void SVGPanel::OnPaint(wxPaintEvent& event)
 			}
 			nsvgDeleteRasterizer(rast);
 			free(image_buffer);
-			// draw text on top
-			wxGraphicsContext* gc = wxGraphicsContext::Create(m_bitmap);
-			gc->SetAntialiasMode(wxANTIALIAS_NONE);
-			for(TextLabel& a : m_TextLabels)
+
+			// draw text on top of the bitmap
+			// Re: Drawing Text antialiased with wxGraphicsContext
+			// double max's answer is that GDI+ based wxGraphicsContext works badly compared with the D2D based
+			// https://forums.wxwidgets.org/viewtopic.php?p=201556&sid=fcb5ee31930dc9311542cfd8db6c99b2#p201556
+			// Create a wxMemoryDC associated with the bitmap
+			wxMemoryDC memDC(m_bitmap);
+
+			// Set the background to transparent
+			memDC.SetBackground(*wxTRANSPARENT_BRUSH);
+			memDC.Clear();
+
+			// Set up the Direct2D renderer
+			wxGraphicsRenderer* d2d = wxGraphicsRenderer::GetDirect2DRenderer();
+			if (d2d)
 			{
-				if (a.label.IsEmpty())
-					continue;
-				// The coordinates refer to the top-left corner of the rectangle bounding the string.
-				// See GetTextExtent() for how to get the dimensions of a text string,
-				// which can be used to position the text more precisely
-
-				// for svg text, its x,y is defined as: x: The x coordinate of the starting point of the text baseline.
-				// so generally the left bottom corner of the first character
-
-				//wxFont font(a.fontSize*4*g_Scale, wxROMAN, wxNORMAL, wxLIGHT, false, _T("Times New Roman"));
-
-				// 2022-04-10 point size is in pt unit, we have to convert it to px unit
-				// One point(pt) is the equivalent of 1.333(3) pixels(px)
-
-				wxFont font(wxFontInfo(a.fontSize * m_Scale / 1.3333).FaceName(a.family));
-
-				// enable the smooth font by default
-				// font rendering issue when using C::B under windows remote desktop
-				// https://forums.codeblocks.org/index.php/topic,25146.msg171484.html#msg171484
-
-				wxString nativeDesc = font.GetNativeFontInfoDesc();
-				int index = 0;
-				for(size_t pos = 0, start = 0; pos <= nativeDesc.length();)
+				wxGraphicsContext* gc = d2d->CreateContext(memDC);
+				if (gc)
 				{
-					pos = nativeDesc.find(";", start);
-					index++;
-					if(index == 14)
+					gc->SetAntialiasMode(wxANTIALIAS_DEFAULT);
+
+					for (TextLabel& a : m_TextLabels)
 					{
-						// enable the cleartype option of the font
-						nativeDesc.replace(start, pos - start, "5");
-						bool result = font.SetNativeFontInfo(nativeDesc);
-						break;
-					}
-					start = pos + 1;
-				}
+						if (a.label.IsEmpty())
+							continue;
+						// The coordinates refer to the top-left corner of the rectangle bounding the string.
+						// See GetTextExtent() for how to get the dimensions of a text string,
+						// which can be used to position the text more precisely
 
-				wxGraphicsFont gfont = gc->CreateFont(font, a.fillColor);
-				gc->SetFont(gfont);
+						// for svg text, its x,y is defined as: x: The x coordinate of the starting point of the text baseline.
+						// so generally the left bottom corner of the first character
 
-				// size calculation
-				wxDouble  w, h;
-				wxDouble descent;
-				gc->GetTextExtent(a.label, &w, &h, &descent);
+						//wxFont font(a.fontSize*4*g_Scale, wxROMAN, wxNORMAL, wxLIGHT, false, _T("Times New Roman"));
 
-				gc->DrawText(a.label, a.x * m_Scale, a.y * m_Scale - h + descent);
-			} //for (TextLabel &a : m_TextLabels)
-			delete gc;
+						// 2022-04-10 point size is in pt unit, we have to convert it to px unit
+						// One point(pt) is the equivalent of 1.333(3) pixels(px)
+
+						wxFont font(wxFontInfo(a.fontSize * m_Scale / 1.3333).FaceName(a.family));
+
+						// enable the smooth font by default
+						// font rendering issue when using C::B under windows remote desktop
+						// https://forums.codeblocks.org/index.php/topic,25146.msg171484.html#msg171484
+						// enable the "smooth font" feature for the legacy GDI font render.
+						wxString nativeDesc = font.GetNativeFontInfoDesc();
+						int index = 0;
+						for(size_t pos = 0, start = 0; pos <= nativeDesc.length();)
+						{
+							pos = nativeDesc.find(";", start);
+							index++;
+							if(index == 14)
+							{
+								// enable the cleartype option of the font
+								nativeDesc.replace(start, pos - start, "5");
+								bool result = font.SetNativeFontInfo(nativeDesc);
+								break;
+							}
+							start = pos + 1;
+						}
+
+						wxGraphicsFont gfont = gc->CreateFont(font, a.fillColor);
+						gc->SetFont(gfont);
+
+						// size calculation
+						wxDouble  w, h;
+						wxDouble descent;
+						gc->GetTextExtent(a.label, &w, &h, &descent);
+
+						gc->DrawText(a.label, a.x * m_Scale, a.y * m_Scale - h + descent);
+					} // for (TextLabel& a : m_TextLabels)
+
+					delete gc;
+				} // if (gc)
+
+			} // if (d2d)
+			else
+			{
+				wxLogError("Direct2D renderer is not available.");
+			}
+
+			// Select the null bitmap to release the memory DC
+			memDC.SelectObject(wxNullBitmap);
 		}
 
 		if(m_bitmap.IsOk())
@@ -233,4 +262,4 @@ void SVGPanel::OnPaint(wxPaintEvent& event)
 		} //for (TextLabel &a : m_TextLabels)
 #endif
 	} //if( m_svg_image!=NULL )
-};
+}
